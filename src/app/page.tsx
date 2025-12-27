@@ -8,14 +8,46 @@ import { WarningBanner } from '@/components/WarningBanner';
 import { PaymentForm } from '@/components/PaymentForm';
 import { PaymentList } from '@/components/PaymentList';
 import { AnalyticsChart } from '@/components/AnalyticsChart';
-import { Wallet, TrendingUp, History, Coins } from 'lucide-react';
+import { Wallet, TrendingUp, History, Coins, LogOut } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
+import { useRouter } from 'next/navigation';
 
 export default function Dashboard() {
   const isOnline = useOnlineStatus();
+  const [user, setUser] = useState<any>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const router = useRouter();
+
   const payments = useLiveQuery(() => db.payments.toArray()) || [];
 
   const totalAmount = payments.reduce((sum, p) => sum + p.amount, 0);
   const pendingCount = payments.filter(p => p.synced === 0).length;
+
+  useEffect(() => {
+    async function checkUser() {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        router.push('/login');
+      } else {
+        setUser(session.user);
+      }
+      setAuthLoading(false);
+    }
+    checkUser();
+  }, [router]);
+
+  useEffect(() => {
+    if (isOnline && user) {
+      syncPayments();
+    }
+  }, [isOnline, user]);
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    router.push('/login');
+  };
+
+  if (authLoading) return <div className="min-h-screen flex items-center justify-center text-indigo-400">Загрузка...</div>;
 
   // Prepare analytics data
   const last7Days = Array.from({ length: 7 }, (_, i) => {
@@ -33,12 +65,6 @@ export default function Dashboard() {
     )
   };
 
-  useEffect(() => {
-    if (isOnline) {
-      syncPayments();
-    }
-  }, [isOnline]);
-
   return (
     <main className="min-h-screen pb-20">
       <WarningBanner isOffline={!isOnline} />
@@ -49,7 +75,7 @@ export default function Dashboard() {
             <h1 className="text-4xl font-black tracking-tight text-white mb-2">
               Resilient<span className="text-indigo-500">Tracker</span>
             </h1>
-            <p className="text-slate-400">Ваши финансы под защитой даже без интернета</p>
+            <p className="text-slate-400">Привет, {user?.email?.split('@')[0]}! Ваши финансы под защитой.</p>
           </div>
 
           <div className="flex items-center gap-4">
@@ -59,7 +85,13 @@ export default function Dashboard() {
                 {isOnline ? 'Онлайн' : 'Оффлайн'}
               </span>
             </div>
-            <button className="text-sm text-indigo-400 hover:text-indigo-300 font-medium px-4">Вход</button>
+            <button
+              onClick={handleSignOut}
+              className="text-slate-400 hover:text-error transition-colors p-2 lg:bg-white/5 rounded-lg"
+              title="Выйти"
+            >
+              <LogOut size={20} />
+            </button>
           </div>
         </header>
 
@@ -97,7 +129,6 @@ export default function Dashboard() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          {/* Left Column: Analytics + History */}
           <div className="lg:col-span-8 flex flex-col gap-8">
             <div className="glass-card p-8">
               <div className="flex items-center justify-between mb-8">
@@ -120,14 +151,9 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Right Column: Add Form */}
           <div className="lg:col-span-4">
             <div className="sticky top-8">
               <PaymentForm onAdd={() => { }} />
-
-              <div className="mt-8 p-6 rounded-2xl border border-white/5 bg-white/2 italic text-sm text-slate-500">
-                &ldquo;Ваши данные шифруются локально и передаются только по защищенным каналам связи.&rdquo;
-              </div>
             </div>
           </div>
         </div>
