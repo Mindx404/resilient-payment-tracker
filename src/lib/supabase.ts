@@ -1,11 +1,13 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder';
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
-
-if (supabaseUrl === 'https://placeholder.supabase.co') {
-    console.warn('Supabase URL is missing. Please set NEXT_PUBLIC_SUPABASE_URL in .env.local');
+if (!supabaseUrl || supabaseUrl === 'your-supabase-url') {
+    console.error('КРИТИЧЕСКАЯ ОШИБКА: NEXT_PUBLIC_SUPABASE_URL не задан в настройках Vercel!');
 }
 
+export const supabase = createClient(
+    supabaseUrl || 'https://placeholder.supabase.co',
+    supabaseAnonKey || 'placeholder'
+);
