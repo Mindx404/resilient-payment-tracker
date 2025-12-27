@@ -30,12 +30,13 @@ export default function ProfilePage() {
                     .single();
 
                 if (data) {
-                    setUsername(data.username || user.email?.split('@')[0]);
+                    setUsername(data.username || user.email?.split('@')[0] || 'User');
                     setAvatarUrl(data.avatar_url);
                 } else if (error && error.code === 'PGRST116') {
+                    const defaultName = user.email?.split('@')[0] || 'User';
                     // Если профиля еще нет, создаем его
-                    await supabase.from('profiles').insert([{ id: user.id, username: user.email?.split('@')[0] }]);
-                    setUsername(user.email?.split('@')[0]);
+                    await supabase.from('profiles').insert([{ id: user.id, username: defaultName }]);
+                    setUsername(defaultName);
                 }
             }
             setLoading(false);
