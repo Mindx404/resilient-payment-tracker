@@ -3,13 +3,13 @@
 import React, { useEffect, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '@/lib/db';
-import { useOnlineStatus, syncPayments } from '@/utils/sync';
+import { useOnlineStatus, syncPayments, fetchFromCloud } from '@/utils/sync';
+import { Navbar } from '@/components/Navbar';
 import { WarningBanner } from '@/components/WarningBanner';
 import { PaymentForm } from '@/components/PaymentForm';
 import { PaymentList } from '@/components/PaymentList';
 import { AnalyticsChart } from '@/components/AnalyticsChart';
-import { ResilientAcademy } from '@/components/ResilientAcademy';
-import { Wallet, TrendingUp, History, Coins, LogOut, ShieldCheck, Zap } from 'lucide-react';
+import { Wallet, TrendingUp, History, Coins, ShieldCheck, Zap, ArrowDownCircle } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 
@@ -17,6 +17,7 @@ export default function Dashboard() {
   const isOnline = useOnlineStatus();
   const [user, setUser] = useState<any>(null);
   const [authLoading, setAuthLoading] = useState(true);
+  const [syncingCloud, setSyncingCloud] = useState(false);
   const router = useRouter();
 
   const payments = useLiveQuery(() => db.payments.toArray()) || [];
@@ -25,16 +26,20 @@ export default function Dashboard() {
   const pendingCount = payments.filter(p => p.synced === 0).length;
 
   useEffect(() => {
-    async function checkUser() {
+    async function init() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         router.push('/login');
       } else {
         setUser(session.user);
+        // Как только юзер загрузился, тянем данные из облака
+        setSyncingCloud(true);
+        await fetchFromCloud();
+        setSyncingCloud(false);
       }
       setAuthLoading(false);
     }
-    checkUser();
+    init();
   }, [router]);
 
   useEffect(() => {
@@ -45,7 +50,6 @@ export default function Dashboard() {
 
   if (authLoading) return <div className="min-h-screen flex items-center justify-center text-indigo-400 font-bold animate-pulse">ИНИЦИАЛИЗАЦИЯ ЗАЩИТЫ...</div>;
 
-  // Prepare analytics data
   const last7Days = Array.from({ length: 7 }, (_, i) => {
     const d = new Date();
     d.setDate(d.getDate() - i);
@@ -63,38 +67,25 @@ export default function Dashboard() {
 
   return (
     <main className="min-h-screen pb-20 bg-[#0a0a0b]">
-      <div className="bg-indigo-600/10 text-indigo-400 text-center py-2 text-[10px] font-black uppercase tracking-[0.2em]">
+      <div className="bg-indigo-600/10 text-indigo-400 text-center py-2 text-[10px] font-black uppercase tracking-[0.2em] relative">
         HACKATHON FinBilim 2025 • TEEN EDITION
+        {syncingCloud && (
+          <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
+            <ArrowDownCircle size={12} className="animate-bounce" />
+            <span className="text-[8px]">Синхронизация...</span>
+          </div>
+        )}
       </div>
 
+      <Navbar />
       <WarningBanner isOffline={!isOnline} />
 
       <div className="container mx-auto px-6 py-8">
-        <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
-          <div>
-            <div className="flex items-center gap-3 mb-2">
-              <h1 className="text-4xl font-black tracking-tighter text-white">
-                Resilient<span className="text-indigo-500">Tracker</span>
-              </h1>
-              <div className="bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded text-[10px] text-emerald-400 font-bold uppercase">v2.0 Beta</div>
-            </div>
-            <p className="text-slate-400 font-medium">Салам, <span className="text-white">{user?.email?.split('@')[0]}</span>! Твой финансовый щит активирован.</p>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <div className="glass-card px-4 py-2.5 flex items-center gap-3">
-              <div className={`w-2.5 h-2.5 rounded-full ${isOnline ? 'bg-emerald-500 shadow-[0_0_12px_#10b981]' : 'bg-orange-500 shadow-[0_0_12px_#f59e0b]'}`} />
-              <span className="text-xs font-bold uppercase tracking-widest text-slate-300">
-                {isOnline ? 'Online' : 'Offline Mode'}
-              </span>
-            </div>
-            <button
-              onClick={async () => { await supabase.auth.signOut(); router.push('/login'); }}
-              className="text-slate-400 hover:text-red-400 transition-colors p-3 bg-white/5 rounded-2xl"
-            >
-              <LogOut size={20} />
-            </button>
-          </div>
+        <header className="mb-12">
+          <h2 className="text-3xl font-black text-white mb-2 tracking-tighter">
+            Твой <span className="text-indigo-500">Обзор</span>
+          </h2>
+          <p className="text-slate-500 font-medium">Общая статистика твоей финансовой устойчивости</p>
         </header>
 
         {/* Stats Grid */}
@@ -102,10 +93,10 @@ export default function Dashboard() {
           <div className="glass-card p-6 border-b-4 border-b-indigo-500">
             <div className="flex items-center gap-3 mb-4 text-slate-500">
               <Wallet size={18} />
-              <span className="text-[10px] font-black uppercase tracking-widest">Траты в мес.</span>
+              <span className="text-[10px] font-black uppercase tracking-widest">Траты (KGS)</span>
             </div>
             <div className="text-3xl font-black text-white">
-              {totalAmount.toLocaleString()} <span className="text-sm text-slate-500 font-medium">KGS</span>
+              {totalAmount.toLocaleString()}
             </div>
           </div>
 
@@ -141,15 +132,12 @@ export default function Dashboard() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          {/* Left: Academy & Analytics */}
           <div className="lg:col-span-8 flex flex-col gap-8">
-            <ResilientAcademy />
-
             <div className="glass-card p-8">
               <div className="flex items-center justify-between mb-8">
                 <h3 className="text-xl font-bold text-white flex items-center gap-2">
                   <TrendingUp className="text-indigo-500" />
-                  Моя активность
+                  Активность расходов
                 </h3>
               </div>
               <AnalyticsChart data={chartData} />
@@ -159,25 +147,24 @@ export default function Dashboard() {
               <div className="flex items-center justify-between mb-8">
                 <h3 className="text-xl font-bold text-white flex items-center gap-2">
                   <History className="text-indigo-500" />
-                  Последние чеки
+                  История платежей
                 </h3>
               </div>
               <PaymentList payments={payments} />
             </div>
           </div>
 
-          {/* Right: Payment Form */}
           <div className="lg:col-span-4">
-            <div className="sticky top-8 flex flex-col gap-6">
+            <div className="sticky top-24 flex flex-col gap-6">
               <PaymentForm onAdd={() => { }} />
 
-              <div className="glass-card p-6 bg-gradient-to-br from-indigo-500/10 to-purple-500/10 border-indigo-500/20">
-                <h4 className="font-bold text-white mb-2 flex items-center gap-2">
-                  <ShieldCheck size={16} className="text-indigo-400" />
-                  Совет дня
+              <div className="glass-card p-6 bg-gradient-to-br from-white/2 to-white/5 border-white/5">
+                <h4 className="font-bold text-white mb-2 flex items-center gap-2 text-sm">
+                  <ArrowDownCircle size={16} className="text-indigo-400" />
+                  Умная синхронизация
                 </h4>
-                <p className="text-xs text-slate-400 leading-relaxed italic">
-                  &ldquo;Если QR в магазине не сканируется, проверь соединение. Если сети нет — просто запиши сумму в ResilientTracker, и мы напомним тебе оплатить её позже наличными или синхронизируем данные.&rdquo;
+                <p className="text-[10px] text-slate-500 leading-relaxed italic">
+                  Мы автоматически объединяем данные с твоего телефона и компьютера, чтобы твои расходы всегда были актуальны.
                 </p>
               </div>
             </div>
