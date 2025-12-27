@@ -1,10 +1,13 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+// Используем .trim(), чтобы убрать случайные пробелы при копировании
+const supabaseUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL || '').trim();
+const supabaseAnonKey = (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '').trim();
 
-if (!supabaseUrl || supabaseUrl === 'your-supabase-url') {
-    console.error('КРИТИЧЕСКАЯ ОШИБКА: NEXT_PUBLIC_SUPABASE_URL не задан в настройках Vercel!');
+// Логируем для отладки (в продакшене ключи не светятся, только проверка на наличие)
+if (typeof window !== 'undefined') {
+    if (!supabaseUrl) console.error('Supabase URL is missing!');
+    if (!supabaseAnonKey) console.error('Supabase Anon Key is missing!');
 }
 
 export const supabase = createClient(
