@@ -1,36 +1,65 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🛡️ Resilient Payment Tracker
 
-## Getting Started
+**Offline-First | Sync-Capable | AI-Light Warnings**
 
-First, run the development server:
+MVP разработан для хакатона. Решение проблемы потери данных о платежах в условиях нестабильного интернета.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## 🚀 Основные возможности
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+-   **Offline-First:** Добавляйте платежи в горах, в дороге или при сбое сети. Данные сохраняются в браузере (IndexedDB).
+-   **Auto-Sync:** Как только интернет восстановится, приложение автоматически отправит данные в облако (Supabase).
+-   **AI Warning Banner:** Система анализирует статус сети и "предсказывает" риски сбоев, рекомендуя перейти на наличные или подождать.
+-   **Premium UI:** Современный темный интерфейс с эффектом Glassmorphism и плавными анимациями.
+-   **Analytics:** Наглядные графики ваших расходов за последнюю неделю.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 🛠 Технологический стек
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+-   **Frontend:** Next.js 14, Tailwind CSS, Framer Motion, Chart.js
+-   **Database (Offline):** Dexie.js (IndexedDB)
+-   **Backend/Auth:** Supabase
+-   **Icons:** Lucide-React
 
-## Learn More
+## 📦 Быстрый старт
 
-To learn more about Next.js, take a look at the following resources:
+1.  **Клонируйте проект**
+2.  **Установите зависимости:**
+    ```bash
+    npm install
+    ```
+3.  **Настройте Supabase:**
+    Создайте таблицу `payments` в Supabase SQL Editor:
+    ```sql
+    create table payments (
+      id uuid default gen_random_uuid() primary key,
+      user_id uuid references auth.users(id),
+      amount numeric not null,
+      description text,
+      status text,
+      createdAt timestamp with time zone default timezone('utc'::text, now()),
+      synced integer default 1
+    );
+    ```
+4.  **Настройте .env:**
+    Создайте `.env.local` и добавьте:
+    ```env
+    NEXT_PUBLIC_SUPABASE_URL=your_url
+    NEXT_PUBLIC_SUPABASE_ANON_KEY=your_key
+    ```
+5.  **Запустите:**
+    ```bash
+    npm run dev
+    ```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 🎯 Питч (2 минуты)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+**Проблема:** В регионах с нестабильным интернетом пользователи часто не могут провести платеж или забывают записать расходы, когда сеть "лежит". Это ведет к хаосу в личных финансах и бизнесе.
 
-## Deploy on Vercel
+**Решение:** Resilient Payment Tracker — это страховка для ваших данных. Мы используем Local-first подход: приложение всегда доступно. Даже если сервер упадет, ваши данные в безопасности на вашем устройстве.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+**Ценность:** 
+1. **Надежность:** 100% аптайм для записи данных.
+2. **Прозрачность:** Аналитика даже в оффлайне.
+3. **Безопасность:** Прозрачная синхронизация с облаком.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
+*Developed with ❤️ for the Hackathon.*
