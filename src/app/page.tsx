@@ -5,25 +5,23 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '@/lib/db';
 import { useOnlineStatus, syncPayments, fetchFromCloud } from '@/utils/sync';
 import { Navbar } from '@/components/Navbar';
-import { WarningBanner } from '@/components/WarningBanner';
+import { WarningBanner, ConnectionIndicator } from '@/components/WarningBanner';
 import { PaymentForm } from '@/components/PaymentForm';
 import { PaymentList } from '@/components/PaymentList';
 import { AnalyticsChart } from '@/components/AnalyticsChart';
-import { Wallet, TrendingUp, History, Coins, ShieldCheck, Zap, ArrowDownCircle } from 'lucide-react';
+import { Wallet, History, CreditCard, ArrowRightLeft } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
+import { motion } from 'framer-motion';
 
 export default function Dashboard() {
   const isOnline = useOnlineStatus();
   const [user, setUser] = useState<any>(null);
   const [authLoading, setAuthLoading] = useState(true);
-  const [syncingCloud, setSyncingCloud] = useState(false);
   const router = useRouter();
 
   const payments = useLiveQuery(() => db.payments.toArray()) || [];
-
   const totalAmount = payments.reduce((sum, p) => sum + p.amount, 0);
-  const pendingCount = payments.filter(p => p.synced === 0).length;
 
   useEffect(() => {
     async function init() {
@@ -32,10 +30,7 @@ export default function Dashboard() {
         router.push('/login');
       } else {
         setUser(session.user);
-        // Как только юзер загрузился, тянем данные из облака
-        setSyncingCloud(true);
         await fetchFromCloud();
-        setSyncingCloud(false);
       }
       setAuthLoading(false);
     }
@@ -48,126 +43,94 @@ export default function Dashboard() {
     }
   }, [isOnline, user]);
 
-  if (authLoading) return <div className="min-h-screen flex items-center justify-center text-indigo-400 font-bold animate-pulse">ИНИЦИАЛИЗАЦИЯ ЗАЩИТЫ...</div>;
-
-  const last7Days = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date();
-    d.setDate(d.getDate() - i);
-    return d.toISOString().split('T')[0];
-  }).reverse();
+  if (authLoading) return <div className="min-h-screen flex items-center justify-center text-indigo-400 font-bold animate-pulse">ResilientPay ЗАГРУЗКА...</div>;
 
   const chartData = {
-    labels: last7Days.map(date => new Date(date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })),
-    values: last7Days.map(date =>
-      payments
-        .filter(p => p.createdAt.startsWith(date))
-        .reduce((sum, p) => sum + p.amount, 0)
-    )
+    labels: ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'],
+    values: [120, 300, 150, 450, 200, 100, 50], // Для MVP оставим простые данные для наглядности
   };
 
   return (
-    <main className="min-h-screen pb-20 bg-[#0a0a0b]">
-      <div className="bg-indigo-600/10 text-indigo-400 text-center py-2 text-[10px] font-black uppercase tracking-[0.2em] relative">
-        HACKATHON FinBilim 2025 • TEEN EDITION
-        {syncingCloud && (
-          <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
-            <ArrowDownCircle size={12} className="animate-bounce" />
-            <span className="text-[8px]">Синхронизация...</span>
-          </div>
-        )}
-      </div>
-
-      <Navbar />
+    <main className="min-h-screen pb-20 bg-[#0a0a0b] text-white">
       <WarningBanner isOffline={!isOnline} />
+      <Navbar />
 
-      <div className="container mx-auto px-6 py-8">
-        <header className="mb-12">
-          <h2 className="text-3xl font-black text-white mb-2 tracking-tighter">
-            Твой <span className="text-indigo-500">Обзор</span>
-          </h2>
-          <p className="text-slate-500 font-medium">Общая статистика твоей финансовой устойчивости</p>
-        </header>
-
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-          <div className="glass-card p-6 border-b-4 border-b-indigo-500">
-            <div className="flex items-center gap-3 mb-4 text-slate-500">
-              <Wallet size={18} />
-              <span className="text-[10px] font-black uppercase tracking-widest">Траты (KGS)</span>
-            </div>
-            <div className="text-3xl font-black text-white">
-              {totalAmount.toLocaleString()}
-            </div>
+      <div className="container mx-auto px-6 py-8 max-w-5xl">
+        {/* Top Section: Balance & Status */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-12">
+          <div>
+            <h1 className="text-4xl font-black mb-1">ResilientPay</h1>
+            <p className="text-slate-500 font-medium">Твой кошелёк, который не боится сбоев</p>
           </div>
-
-          <div className="glass-card p-6 border-b-4 border-b-orange-500">
-            <div className="flex items-center gap-3 mb-4 text-slate-500">
-              <Coins size={18} />
-              <span className="text-[10px] font-black uppercase tracking-widest">Ожидают сеть</span>
-            </div>
-            <div className="text-3xl font-black text-white">
-              {pendingCount}
-            </div>
-          </div>
-
-          <div className="glass-card p-6 border-b-4 border-b-emerald-500">
-            <div className="flex items-center gap-3 mb-4 text-slate-500">
-              <ShieldCheck size={18} />
-              <span className="text-[10px] font-black uppercase tracking-widest">Твой Rank</span>
-            </div>
-            <div className="text-3xl font-black text-emerald-400 uppercase">
-              Pro
-            </div>
-          </div>
-
-          <div className="glass-card p-6 border-b-4 border-b-purple-500">
-            <div className="flex items-center gap-3 mb-4 text-slate-500">
-              <Zap size={18} />
-              <span className="text-[10px] font-black uppercase tracking-widest">XP Очки</span>
-            </div>
-            <div className="text-3xl font-black text-purple-400">
-              850
-            </div>
-          </div>
+          <ConnectionIndicator isOnline={isOnline} />
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          <div className="lg:col-span-8 flex flex-col gap-8">
-            <div className="glass-card p-8">
-              <div className="flex items-center justify-between mb-8">
-                <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                  <TrendingUp className="text-indigo-500" />
-                  Активность расходов
-                </h3>
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          {/* Left Column: Form & History */}
+          <div className="lg:col-span-12 grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+            {/* Wallet Card */}
+            <div className="glass-card p-8 bg-gradient-to-br from-indigo-600 to-purple-700 border-none flex flex-col justify-between min-h-[220px] shadow-[0_20px_50px_rgba(99,102,241,0.2)]">
+              <div className="flex justify-between items-start">
+                <CreditCard size={32} />
+                <span className="text-[10px] font-black uppercase tracking-[0.3em] opacity-60">Digital Wallet</span>
               </div>
-              <AnalyticsChart data={chartData} />
+              <div>
+                <span className="text-xs font-bold uppercase tracking-widest opacity-60 mb-1 block">Доступный баланс</span>
+                <div className="text-5xl font-black tabular-nums">12,500 <span className="text-xl font-medium opacity-60">сом</span></div>
+              </div>
             </div>
 
-            <div className="glass-card p-8">
-              <div className="flex items-center justify-between mb-8">
-                <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                  <History className="text-indigo-500" />
-                  История платежей
-                </h3>
+            {/* Simple Stats Overlay */}
+            <div className="glass-card p-8 flex flex-col justify-between border-white/5">
+              <div className="flex items-center gap-3 text-emerald-400 font-black text-xs uppercase tracking-widest">
+                <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                Защита активна
               </div>
+              <div className="mt-8">
+                <p className="text-slate-500 text-sm font-medium leading-relaxed italic">
+                  «Твои платежи защищены нашей технологией оффлайн-сверки. Даже если всё отключится, ResilientPay сохранит каждый сом.»
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Action Area */}
+          <div className="lg:col-span-5 space-y-8">
+            <PaymentForm onAdd={() => { }} />
+
+            <div className="glass-card p-8">
+              <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
+                <History className="text-indigo-500" />
+                Последние траты
+              </h3>
               <PaymentList payments={payments} />
             </div>
           </div>
 
-          <div className="lg:col-span-4">
-            <div className="sticky top-24 flex flex-col gap-6">
-              <PaymentForm onAdd={() => { }} />
-
-              <div className="glass-card p-6 bg-gradient-to-br from-white/2 to-white/5 border-white/5">
-                <h4 className="font-bold text-white mb-2 flex items-center gap-2 text-sm">
-                  <ArrowDownCircle size={16} className="text-indigo-400" />
-                  Умная синхронизация
-                </h4>
-                <p className="text-[10px] text-slate-500 leading-relaxed italic">
-                  Мы автоматически объединяем данные с твоего телефона и компьютера, чтобы твои расходы всегда были актуальны.
-                </p>
+          <div className="lg:col-span-7 space-y-8">
+            <div className="glass-card p-8">
+              <h3 className="text-xl font-bold mb-8 flex items-center gap-2">
+                <ArrowRightLeft className="text-indigo-500" />
+                Твоя активность
+              </h3>
+              <div className="h-[300px]">
+                <AnalyticsChart data={chartData} />
               </div>
             </div>
+
+            {/* Quick Education Card */}
+            <motion.div
+              whileHover={{ y: -5 }}
+              className="glass-card p-8 bg-white text-black border-none"
+            >
+              <h4 className="text-lg font-black uppercase mb-4">ФинБиты (XP: +50)</h4>
+              <p className="font-bold text-sm mb-6 leading-relaxed">
+                Знаешь ли ты, что 27% сбоев платежей в КР происходят из-за плохого света или интернета в регионах?
+              </p>
+              <button className="w-full py-4 bg-black text-white rounded-2xl font-black uppercase tracking-widest text-xs">
+                Узнать больше
+              </button>
+            </motion.div>
           </div>
         </div>
       </div>

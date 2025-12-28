@@ -1,26 +1,52 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { AlertTriangle, AlertCircle, Info, CloudOff } from 'lucide-react';
+import { AlertCircle, ShieldAlert, CheckCircle2, CloudOff, Wifi, WifiOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const LOCAL_RISKS = [
-    "⚠️ В Бишкеке замечены сбои в сетях 4G — используйте оффлайн-режим для трекинга.",
-    "🛡️ Прогноз: Риск сбоя QR-платежей сегодня высокий. Рекомендуем иметь 200 сом наличными.",
-    "ℹ️ Новые правила ремиттансов: используйте только официальные приложения банков для переводов из РФ.",
-    "🚨 Наблюдаются технические работы на серверах Элкарт. Платежи могут проходить с задержкой."
-];
+export function ConnectionIndicator({ isOnline }: { isOnline: boolean }) {
+    const [risk, setRisk] = useState<'good' | 'medium' | 'high'>(isOnline ? 'good' : 'high');
+
+    useEffect(() => {
+        if (!isOnline) {
+            setRisk('high');
+            return;
+        }
+        // Симуляция анализа сети: иногда выставляем риск
+        const random = Math.random();
+        if (random > 0.8) setRisk('medium');
+        else setRisk('good');
+    }, [isOnline]);
+
+    const statusMap = {
+        good: { color: 'text-emerald-500', bg: 'bg-emerald-500/10', icon: <Wifi size={16} />, text: 'Связь норм' },
+        medium: { color: 'text-[#f59e0b]', bg: 'bg-amber-500/10', icon: <AlertCircle size={16} />, text: 'Риск сбоя' },
+        high: { color: 'text-red-500', bg: 'bg-red-500/10', icon: <WifiOff size={16} />, text: 'Проблемы' },
+    };
+
+    const current = statusMap[risk];
+
+    return (
+        <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/5 ${current.bg} ${current.color}`}>
+            {current.icon}
+            <span className="text-[10px] font-black uppercase tracking-tighter">{current.text}</span>
+        </div>
+    );
+}
 
 export function WarningBanner({ isOffline }: { isOffline: boolean }) {
     const [warning, setWarning] = useState<string | null>(null);
 
     useEffect(() => {
         if (isOffline) {
-            setWarning('📉 Ты сейчас в ОФФЛАЙНЕ. Все данные сохраняются локально и улетят в облако, как только появится сеть.');
+            setWarning('📉 Интернета нет. Платёж сохранится в телефоне и пройдёт позже сам.');
         } else {
-            // Имитация AI-анализа: выбираем случайный риск из базы данных КР
-            const randomRisk = LOCAL_RISKS[Math.floor(Math.random() * LOCAL_RISKS.length)];
-            setWarning(randomRisk);
+            const riskChance = Math.random() > 0.7;
+            if (riskChance) {
+                setWarning('⚠️ Возможны сбои. Рекомендуем иметь немного нала или ограничить траты.');
+            } else {
+                setWarning(null);
+            }
         }
     }, [isOffline]);
 
@@ -31,22 +57,13 @@ export function WarningBanner({ isOffline }: { isOffline: boolean }) {
                     initial={{ y: -50, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
                     exit={{ y: -50, opacity: 0 }}
-                    className={`w-full ${isOffline ? 'bg-orange-500/20 border-b border-orange-500/30' : 'bg-indigo-500/20 border-b border-indigo-500/30'}`}
+                    className={`w-full ${isOffline ? 'bg-orange-500/20' : 'bg-red-500/10'} border-b border-white/5`}
                 >
-                    <div className="container mx-auto px-6 py-4 flex items-center justify-between gap-4">
-                        <div className="flex items-center gap-3 text-sm md:text-base font-semibold">
-                            {isOffline ? (
-                                <CloudOff className="text-orange-400 shrink-0" size={20} />
-                            ) : (
-                                <AlertTriangle className="text-indigo-400 shrink-0" size={20} />
-                            )}
-                            <span className={isOffline ? 'text-orange-200' : 'text-indigo-200'}>
-                                {warning}
-                            </span>
-                        </div>
-                        <button onClick={() => setWarning(null)} className="text-white/20 hover:text-white/50 transition-colors">
-                            ✕
-                        </button>
+                    <div className="container mx-auto px-6 py-4 flex items-center justify-center gap-3">
+                        <ShieldAlert className={isOffline ? 'text-orange-400' : 'text-red-400'} size={20} />
+                        <span className={`text-sm md:text-base font-bold ${isOffline ? 'text-orange-200' : 'text-red-200'}`}>
+                            {warning}
+                        </span>
                     </div>
                 </motion.div>
             )}

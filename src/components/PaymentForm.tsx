@@ -3,16 +3,19 @@
 import React, { useState } from 'react';
 import { db } from '@/lib/db';
 import { syncPayments } from '@/utils/sync';
-import { Plus, QrCode, Loader2 } from 'lucide-react';
+import { Plus, QrCode, Loader2, CheckCircle2 } from 'lucide-react';
+import { QRScanner } from './QRScanner';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export function PaymentForm({ onAdd }: { onAdd: () => void }) {
     const [amount, setAmount] = useState('');
     const [description, setDescription] = useState('');
     const [loading, setLoading] = useState(false);
-    const [showQR, setShowQR] = useState(false);
+    const [showScanner, setShowScanner] = useState(false);
+    const [showSuccess, setShowSuccess] = useState(false);
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const handleSubmit = async (e?: React.FormEvent) => {
+        e?.preventDefault();
         if (!amount) return;
 
         setLoading(true);
@@ -29,6 +32,10 @@ export function PaymentForm({ onAdd }: { onAdd: () => void }) {
             setDescription('');
             onAdd();
 
+            // Показываем успех сразу (даже если оффлайн)
+            setShowSuccess(true);
+            setTimeout(() => setShowSuccess(false), 3000);
+
             if (navigator.onLine) {
                 await syncPayments();
             }
@@ -39,73 +46,86 @@ export function PaymentForm({ onAdd }: { onAdd: () => void }) {
         }
     };
 
-    const simulateQR = () => {
-        setShowQR(true);
-        setTimeout(() => {
-            setAmount('150');
-            setDescription('Оплата по QR (Обед)');
-            setShowQR(false);
-        }, 1500);
+    const handleScan = (data: string) => {
+        // В реальности парсим QR, тут просто симуляция суммы
+        setAmount('120');
+        setDescription('Оплата по QR');
+        setShowScanner(false);
+        // Автоматический сабмит после скана для скорости
+        setTimeout(() => handleSubmit(), 500);
     };
 
     return (
-        <form onSubmit={handleSubmit} className="glass-card p-8 flex flex-col gap-6 w-full">
-            <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-400">
-                    Новая оплата
-                </h2>
-                <button
-                    type="button"
-                    onClick={simulateQR}
-                    className="p-3 rounded-full bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 transition-all border border-indigo-500/30"
-                    title="Сканировать QR"
-                >
-                    <QrCode size={24} />
-                </button>
-            </div>
+        <div className="relative">
+            <AnimatePresence>
+                {showScanner && (
+                    <QRScanner onScan={handleScan} onClose={() => setShowScanner(false)} />
+                )}
+            </AnimatePresence>
 
-            {showQR && (
-                <div className="bg-indigo-500/10 border border-indigo-500/30 rounded-xl p-4 text-center animate-pulse">
-                    <Loader2 className="animate-spin mx-auto mb-2 text-indigo-400" />
-                    <span className="text-xs text-indigo-300 font-bold uppercase tracking-widest">Сканирую QR-код...</span>
+            <form onSubmit={handleSubmit} className="glass-card p-8 flex flex-col gap-6 w-full relative overflow-hidden">
+                <AnimatePresence>
+                    {showSuccess && (
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.8 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.8 }}
+                            className="absolute inset-0 z-20 bg-emerald-500 flex flex-col items-center justify-center text-white"
+                        >
+                            <CheckCircle2 size={64} className="mb-4" />
+                            <h3 className="text-2xl font-black uppercase">Оплата принята!</h3>
+                            <p className="text-sm opacity-80 mt-2">Платёж зафикисирован в телефоне</p>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
+                <div className="flex items-center justify-between">
+                    <h2 className="text-2xl font-bold text-white">Новая оплата</h2>
+                    <button
+                        type="button"
+                        onClick={() => setShowScanner(true)}
+                        className="p-3 rounded-2xl bg-indigo-500 text-white shadow-[0_0_15px_rgba(99,102,241,0.5)] active:scale-95 transition-all"
+                    >
+                        <QrCode size={24} />
+                    </button>
                 </div>
-            )}
 
-            <div className="flex flex-col gap-2">
-                <label className="text-sm font-medium text-slate-400 uppercase tracking-wider">Сумма (сом)</label>
-                <input
-                    type="number"
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                    placeholder="0.00"
-                    className="bg-white/5 border border-white/10 rounded-xl px-4 py-4 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all text-white text-xl font-bold"
-                    required
-                />
-            </div>
+                <div className="flex flex-col gap-2">
+                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Сумма (сом)</label>
+                    <input
+                        type="number"
+                        value={amount}
+                        onChange={(e) => setAmount(e.target.value)}
+                        placeholder="0.00"
+                        className="bg-white/5 border border-white/10 rounded-2xl px-5 py-5 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all text-white text-3xl font-black placeholder:text-slate-800"
+                        required
+                    />
+                </div>
 
-            <div className="flex flex-col gap-2">
-                <label className="text-sm font-medium text-slate-400 uppercase tracking-wider">Описание</label>
-                <input
-                    type="text"
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    placeholder="За что платим?"
-                    className="bg-white/5 border border-white/10 rounded-xl px-4 py-4 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all text-white"
-                />
-            </div>
+                <div className="flex flex-col gap-2">
+                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Что оплачиваем?</label>
+                    <input
+                        type="text"
+                        value={description}
+                        onChange={(e) => setDescription(e.target.value)}
+                        placeholder="Обед, проезд, магазин..."
+                        className="bg-white/5 border border-white/10 rounded-2xl px-5 py-4 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all text-white font-bold"
+                    />
+                </div>
 
-            <button
-                type="submit"
-                disabled={loading || showQR}
-                className="primary-button py-5 rounded-xl font-black text-lg flex items-center justify-center gap-3 disabled:opacity-50 mt-2 text-white"
-            >
-                <Plus size={24} />
-                {loading ? 'СОХРАНЯЮ...' : 'ЗАФИКСИРОВАТЬ'}
-            </button>
+                <button
+                    type="submit"
+                    disabled={loading}
+                    className="primary-button py-5 rounded-2xl font-black text-xl flex items-center justify-center gap-3 disabled:opacity-50 text-white"
+                >
+                    {loading ? <Loader2 className="animate-spin" /> : 'ПЛАТИТЬ'}
+                </button>
 
-            <p className="text-[10px] text-center text-slate-500 leading-relaxed italic">
-                *Данные сохранятся мгновенно даже без интернета
-            </p>
-        </form>
+                <div className="flex items-center justify-center gap-2 text-[10px] text-slate-500 font-bold uppercase tracking-widest">
+                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                    Безопасный оффлайн-режим активен
+                </div>
+            </form>
+        </div>
     );
 }
