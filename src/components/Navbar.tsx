@@ -28,14 +28,12 @@ export function Navbar() {
     return (
         <nav className="sticky top-0 z-50 bg-[#0a0a0b]/80 backdrop-blur-xl border-b border-white/5">
             <div className="container mx-auto px-6 h-16 flex items-center justify-between">
-                {/* Logo */}
                 <Link href="/" className="flex items-center gap-2">
                     <span className="text-xl font-black text-white italic">
                         Resilient<span className="text-indigo-500">Tracker</span>
                     </span>
                 </Link>
 
-                {/* Desktop Nav */}
                 <div className="hidden md:flex items-center gap-8">
                     {navLinks.map((link) => (
                         <Link
@@ -55,7 +53,6 @@ export function Navbar() {
                     </button>
                 </div>
 
-                {/* Mobile Toggle */}
                 <button
                     className="md:hidden text-white p-2"
                     onClick={() => setIsOpen(!isOpen)}
@@ -64,7 +61,6 @@ export function Navbar() {
                 </button>
             </div>
 
-            {/* Mobile Menu */}
             <AnimatePresence>
                 {isOpen && (
                     <motion.div

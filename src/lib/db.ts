@@ -6,7 +6,7 @@ export interface Payment {
   description: string;
   status: 'pending' | 'completed' | 'failed';
   createdAt: string;
-  synced: 0 | 1; // 0 for local-only, 1 for synced
+  synced: 0 | 1;
 }
 
 export class AppDatabase extends Dexie {

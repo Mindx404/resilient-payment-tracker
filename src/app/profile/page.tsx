@@ -12,7 +12,6 @@ export default function ProfilePage() {
     const [uploading, setUploading] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
 
-    // Данные профиля
     const [username, setUsername] = useState('');
     const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
@@ -22,7 +21,6 @@ export default function ProfilePage() {
             if (user) {
                 setUser(user);
 
-                // Загружаем данные из таблицы profiles
                 const { data, error } = await supabase
                     .from('profiles')
                     .select('username, avatar_url')
@@ -34,7 +32,6 @@ export default function ProfilePage() {
                     setAvatarUrl(data.avatar_url);
                 } else if (error && error.code === 'PGRST116') {
                     const defaultName = user.email?.split('@')[0] || 'User';
-                    // Если профиля еще нет, создаем его
                     await supabase.from('profiles').insert([{ id: user.id, username: defaultName }]);
                     setUsername(defaultName);
                 }
@@ -54,17 +51,14 @@ export default function ProfilePage() {
             const fileName = `${user.id}-${Math.random()}.${fileExt}`;
             const filePath = fileName;
 
-            // Загрузка в Storage
             const { error: uploadError } = await supabase.storage
                 .from('avatars')
                 .upload(filePath, file);
 
             if (uploadError) throw uploadError;
 
-            // Получаем публичный URL
             const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(filePath);
 
-            // Обновляем в БД профиля
             const { error: updateError } = await supabase
                 .from('profiles')
                 .update({ avatar_url: publicUrl, updated_at: new Date() })

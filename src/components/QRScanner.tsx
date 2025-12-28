@@ -14,7 +14,7 @@ export function QRScanner({ onScan, onClose }: QRScannerProps) {
         const scanner = new Html5QrcodeScanner(
             'qr-reader',
             { fps: 10, qrbox: { width: 250, height: 250 } },
-      /* verbose= */ false
+            false
         );
 
         scanner.render(
@@ -23,7 +23,6 @@ export function QRScanner({ onScan, onClose }: QRScannerProps) {
                 scanner.clear();
             },
             (error) => {
-                // console.warn(error);
             }
         );
 

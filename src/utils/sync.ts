@@ -4,9 +4,6 @@ import { useEffect, useState } from 'react';
 import { db, type Payment } from '@/lib/db';
 import { supabase } from '@/lib/supabase';
 
-/**
- * Синхронизация локальных данных С ОБЛАКОМ (Upload)
- */
 export async function syncPayments() {
     if (typeof window === 'undefined' || !navigator.onLine) return;
 
@@ -14,7 +11,6 @@ export async function syncPayments() {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
 
-        // 1. Получаем все несинхронизированные платежи (synced === 0)
         const unsynced = await db.payments.where('synced').equals(0).toArray();
 
         for (const payment of unsynced) {
@@ -32,10 +28,6 @@ export async function syncPayments() {
     }
 }
 
-/**
- * Загрузка данных ИЗ ОБЛАКА в локальную БД (Download)
- * Это решит проблему "зашел с телефона - пусто"
- */
 export async function fetchFromCloud() {
     if (typeof window === 'undefined' || !navigator.onLine) return;
 
@@ -52,8 +44,6 @@ export async function fetchFromCloud() {
 
         if (cloudPayments) {
             for (const cp of cloudPayments) {
-                // Проверяем, есть ли уже такой платеж локально (по дате или сумме/описанию)
-                // В идеале в Supabase должен быть UUID, который мы храним и в Dexie
                 const existing = await db.payments
                     .where('createdAt').equals(cp.createdAt)
                     .and(p => p.amount === cp.amount)
@@ -85,7 +75,7 @@ export function useOnlineStatus() {
         const handleOnline = () => {
             setIsOnline(true);
             syncPayments();
-            fetchFromCloud(); // При появлении сети тоже подтягиваем данные
+            fetchFromCloud();
         };
         const handleOffline = () => setIsOnline(false);
 

@@ -28,10 +28,8 @@ export default function LoginPage() {
             if (error) {
                 alert(error.message);
             } else if (data.session) {
-                // Если в Supabase выключено "Confirm email", сессия появится сразу
                 router.push('/');
             } else {
-                // Если подтверждение всё еще нужно
                 alert('Регистрация успешна! Если вы не отключили подтверждение в Supabase, проверьте почту.');
             }
         } else {

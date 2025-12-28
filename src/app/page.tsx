@@ -47,7 +47,7 @@ export default function Dashboard() {
 
   const chartData = {
     labels: ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'],
-    values: [120, 300, 150, 450, 200, 100, 50], // Для MVP оставим простые данные для наглядности
+    values: [120, 300, 150, 450, 200, 100, 50],
   };
 
   return (
@@ -56,7 +56,6 @@ export default function Dashboard() {
       <Navbar />
 
       <div className="container mx-auto px-6 py-8 max-w-5xl">
-        {/* Top Section: Balance & Status */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-12">
           <div>
             <h1 className="text-4xl font-black mb-1">ResilientPay</h1>
@@ -66,9 +65,7 @@ export default function Dashboard() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          {/* Left Column: Form & History */}
           <div className="lg:col-span-12 grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-            {/* Wallet Card */}
             <div className="glass-card p-8 bg-gradient-to-br from-indigo-600 to-purple-700 border-none flex flex-col justify-between min-h-[220px] shadow-[0_20px_50px_rgba(99,102,241,0.2)]">
               <div className="flex justify-between items-start">
                 <CreditCard size={32} />
@@ -80,7 +77,6 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* Simple Stats Overlay */}
             <div className="glass-card p-8 flex flex-col justify-between border-white/5">
               <div className="flex items-center gap-3 text-emerald-400 font-black text-xs uppercase tracking-widest">
                 <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
@@ -94,7 +90,6 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Action Area */}
           <div className="lg:col-span-5 space-y-8">
             <PaymentForm onAdd={() => { }} />
 
@@ -118,7 +113,6 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* Quick Education Card */}
             <motion.div
               whileHover={{ y: -5 }}
               className="glass-card p-8 bg-white text-black border-none"

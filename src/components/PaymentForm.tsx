@@ -32,7 +32,6 @@ export function PaymentForm({ onAdd }: { onAdd: () => void }) {
             setDescription('');
             onAdd();
 
-            // Показываем успех сразу (даже если оффлайн)
             setShowSuccess(true);
             setTimeout(() => setShowSuccess(false), 3000);
 
@@ -47,11 +46,9 @@ export function PaymentForm({ onAdd }: { onAdd: () => void }) {
     };
 
     const handleScan = (data: string) => {
-        // В реальности парсим QR, тут просто симуляция суммы
         setAmount('120');
         setDescription('Оплата по QR');
         setShowScanner(false);
-        // Автоматический сабмит после скана для скорости
         setTimeout(() => handleSubmit(), 500);
     };
 

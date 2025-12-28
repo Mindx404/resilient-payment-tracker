@@ -12,7 +12,6 @@ export function ConnectionIndicator({ isOnline }: { isOnline: boolean }) {
             setRisk('high');
             return;
         }
-        // Симуляция анализа сети: иногда выставляем риск
         const random = Math.random();
         if (random > 0.8) setRisk('medium');
         else setRisk('good');
